@@ -58,12 +58,13 @@ export const acceptSession = async (req, res) => {
 
     session.status = 'accepted';
     
-    // Generate a Video Call meeting link
-    const roomName = `mentor-session-${session._id}`;
-    const meetingUrl = await createVideoRoom(roomName);
-
-    if (meetingUrl) {
-      session.meetingLink = meetingUrl;
+    // Generate a Video Call meeting link only if it doesn't already exist
+    if (!session.meetingLink) {
+      const roomName = `session-${session._id}`;
+      const meetingUrl = await createVideoRoom(roomName);
+      if (meetingUrl) {
+        session.meetingLink = meetingUrl;
+      }
     }
 
     const updatedSession = await session.save();

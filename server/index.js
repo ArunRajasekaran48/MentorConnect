@@ -16,13 +16,13 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*', // Allows all origins for development
+    origin: '*', // Explicitly allow all for network testing
     methods: ['GET', 'POST'],
   },
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: '*' })); // Allow all origins
 app.use(express.json()); // allows parsing of JSON bodies
 
 // Routes

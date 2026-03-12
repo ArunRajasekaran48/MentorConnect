@@ -11,10 +11,11 @@ export const createOrUpdateProfile = async (req, res) => {
     let profile = await MentorProfile.findOne({ user: req.user._id });
 
     if (profile) {
-      // Update existing profile
-      profile.expertise = expertise || profile.expertise;
-      profile.bio = bio || profile.bio;
-      profile.hourlyRate = hourlyRate !== undefined ? hourlyRate : profile.hourlyRate;
+      // Only override fields that are actually provided
+      if (bio !== undefined) profile.bio = bio;
+      if (hourlyRate !== undefined) profile.hourlyRate = hourlyRate;
+      // Allow expertise to be set to any array value (including empty [])
+      if (Array.isArray(expertise)) profile.expertise = expertise;
 
       const updatedProfile = await profile.save();
       return res.json(updatedProfile);
@@ -23,12 +24,27 @@ export const createOrUpdateProfile = async (req, res) => {
     // Create new profile
     profile = await MentorProfile.create({
       user: req.user._id,
-      expertise,
+      expertise: expertise || [],
       bio,
       hourlyRate,
     });
 
     res.status(201).json(profile);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Get the logged-in mentor's own profile
+// @route   GET /api/mentors/me
+// @access  Private/Mentor
+export const getMyProfile = async (req, res) => {
+  try {
+    const profile = await MentorProfile.findOne({ user: req.user._id }).populate('user', 'name email');
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+    res.json(profile);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
