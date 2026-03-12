@@ -124,6 +124,92 @@ export const updateNotes = async (req, res) => {
   }
 };
 
+// @desc    Mark a session as completed
+// @route   PUT /api/sessions/:id/complete
+// @access  Private (mentor or student involved)
+export const completeSession = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+
+    const isMentor = session.mentor.toString() === req.user._id.toString();
+    const isStudent = session.student.toString() === req.user._id.toString();
+    if (!isMentor && !isStudent) {
+      return res.status(403).json({ message: 'Not authorized to complete this session' });
+    }
+
+    if (session.status !== 'accepted') {
+      return res.status(400).json({ message: 'Only accepted sessions can be completed' });
+    }
+
+    session.status = 'completed';
+    const updatedSession = await session.save();
+
+    res.json(updatedSession);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Submit a review for a completed session
+// @route   POST /api/sessions/:id/review
+// @access  Private (student)
+export const submitReview = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+
+    if (session.student.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the student in this session can leave a review' });
+    }
+
+    if (session.status !== 'completed') {
+      return res.status(400).json({ message: 'Can only review completed sessions' });
+    }
+
+    if (session.review && session.review.rating) {
+      return res.status(400).json({ message: 'Review already submitted for this session' });
+    }
+
+    const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    session.review = {
+      rating,
+      comment: comment || '',
+      submittedBy: req.user._id,
+      submittedAt: new Date(),
+    };
+
+    await session.save();
+
+    const mentorProfile = await MentorProfile.findOne({ user: session.mentor });
+    if (mentorProfile) {
+      mentorProfile.reviews.push({
+        student: session.student,
+        session: session._id,
+        rating,
+        comment: comment || '',
+      });
+
+      mentorProfile.ratingCount = (mentorProfile.ratingCount || 0) + 1;
+      mentorProfile.averageRating = ((mentorProfile.averageRating || 0) * (mentorProfile.ratingCount - 1) + rating) / mentorProfile.ratingCount;
+      await mentorProfile.save();
+    }
+
+    res.json({ message: 'Review submitted', review: session.review });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 // @desc    Get sessions for the logged in user
 // @route   GET /api/sessions/my-sessions
 // @access  Private

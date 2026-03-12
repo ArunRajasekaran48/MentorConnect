@@ -33,6 +33,24 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       default: '', // For collaborative notes during the session
     },
+    review: {
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      comment: {
+        type: String,
+        default: '',
+      },
+      submittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      submittedAt: {
+        type: Date,
+      },
+    },
   },
   {
     timestamps: true,

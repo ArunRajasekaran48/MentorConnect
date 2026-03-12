@@ -33,6 +33,42 @@ const mentorProfileSchema = new mongoose.Schema(
         },
       },
     ],
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
+    },
+    reviews: [
+      {
+        student: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+          ref: 'User',
+        },
+        session: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+          ref: 'Session',
+        },
+        rating: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 5,
+        },
+        comment: {
+          type: String,
+          default: '',
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

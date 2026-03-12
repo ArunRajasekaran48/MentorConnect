@@ -74,6 +74,9 @@ const MentorSearch = () => {
               <p className="text-sm font-medium text-gray-700">
                 💵 ${mentor.hourlyRate}/hr
               </p>
+              <p className="text-sm font-medium text-gray-700 mt-1">
+                ⭐ {mentor.averageRating?.toFixed(1) || '0.0'} ({mentor.ratingCount || 0})
+              </p>
 
               {/* Availability */}
               {mentor.availability?.length > 0 && (
